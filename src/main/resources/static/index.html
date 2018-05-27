@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<title>Course-mgr</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<style>
+body,h1,h2,h3,h4,h5 {font-family: "Poppins", sans-serif}
+body {font-size:16px;}
+.w3-half img{margin-bottom:-6px;margin-top:16px;opacity:0.8;cursor:pointer}
+.w3-half img:hover{opacity:1}
+</style>
+<script type="text/javascript">
+  
+  var createObj = "topic";
+  var updateObj = "topic";
+  var updateTopicId;
+  var updateCourseId;
+  var updateCourse_TopicId;
+
+  $(document).ready(function() {
+    getAllTopics();
+    getAllCourses();
+    getAllLessons();
+    getHealthReport();
+    getQuoteOfTheDay();
+    $("#addTopic").click(function() {
+      createObj = "topic";
+      $("#crs_id_lbl, #crs_tp_id, #lsn_id_lbl, #lsn_crs_id, #lsn_tp_lbl, #lsn_tp_id, #lsn_crs_lbl").remove();
+      $("#addModal").show();
+    });
+    $("#addCourse").click(function() {
+      $("#crs_id_lbl, #crs_tp_id, #lsn_id_lbl, #lsn_crs_id, #lsn_tp_lbl, #lsn_tp_id, #lsn_crs_lbl").remove();
+      $("#addForm").prepend(`<label id="crs_id_lbl"><b>Topic Id</b></label>
+            <input  class="w3-input w3-border w3-margin-bottom" type="text" placeholder="Enter the Topic Id for the course.." id="crs_tp_id" required>`);
+      createObj = "course";
+      $("#addModal").show();
+    });
+    $("#addLesson").click(function() {
+      $("#crs_id_lbl, #crs_tp_id, #lsn_id_lbl, #lsn_crs_id, #lsn_tp_lbl, #lsn_tp_id, #lsn_crs_lbl").remove();
+      $("#addForm").prepend(`<label id="lsn_tp_lbl"><b>Topic Id</b></label>
+            <input  class="w3-input w3-border w3-margin-bottom" type="text" placeholder="Enter the Topic Id for the course in which to create lesson.." id="lsn_tp_id" required><label id="lsn_crs_lbl"><b>Course Id</b></label>
+            <input  class="w3-input w3-border w3-margin-bottom" type="text" placeholder="Enter the Course Id for the lesson.." id="lsn_crs_id" required>`);
+      createObj = "lesson";
+      $("#addModal").show();
+    });
+    $("#createBtn").click(function() {
+      createObject();
+    });
+    $("#updateBtn").click(function() {
+      var obj = new Object();
+      obj['name'] = $("#updt_obj_name").val();
+      obj['description'] = $("#updt_obj_desc").val();
+      if(updateObj == "topic"){
+        obj['id'] = updateTopicId;
+        $.ajax({
+          url: 'http://localhost:9001/topics/'+updateTopicId,
+          type: 'PUT',
+          contentType: "application/json; charset=utf-8",
+          success: function (response) {
+            if(response){
+              location.reload();
+            }else {
+              alert("fail");
+            }
+          },
+          data: JSON.stringify(obj)
+        });
+      }else if(updateObj == "course"){
+        obj['id'] = updateCourseId;
+        $.ajax({
+          url: 'http://localhost:9001/topics/'+updateCourse_TopicId+'/courses/'+updateCourseId,
+          type: 'PUT',
+          contentType: "application/json; charset=utf-8",
+          success: function (response) {
+            if(response){
+              location.reload();
+            }else {
+              alert("fail");
+            }
+          },
+          data: JSON.stringify(obj)
+        });
+      }
+    });
+  });
+
+  function getQuoteOfTheDay(){
+    $.get("http://localhost:9001/api/quotes/daily", function(quote) {
+      $("#dailyQuote").append(`<p>${quote.quote}</p>`);
+      $("#dailyQuote").append(`<p class="w3-right">~${quote.author}</p>`);
+    });
+  }
+
+  function getAllTopics(){
+    $.get("http://localhost:9001/topics", function(topicList) {
+      if($.isEmptyObject(topicList)){
+        $("#topicList").append('<li class="w3-light-grey w3-xlarge w3-padding-32">There are no topics. Please add one..</li>');
+      }else {
+        topicList.forEach(function(topic) {
+          console.log(topicList);
+          $("#topicList").append(`<li class="w3-light-grey w3-xlarge w3-display-container" id="topic-${topic.id}">
+            <span class="w3-button w3-red w3-small w3-display-topright" title="Delete Topic" onClick="deleteTopic('${topic.id}')">X</span>
+            <span class="w3-button w3-blue w3-small w3-display-bottomright" title="Update Topic" onClick="updateTopicId('${topic.id}')">U</span>
+              <div class="w3-row">
+                <div class="w3-quarter"><label>Id :</label>${topic.id}</div>
+              </div>
+              <div class="w3-row">
+                <div class="w3-third"><label>Name :</label>${topic.name}</div>
+                <div class="w3-twothird"><label>Description :</label>${topic.description}</div>
+              </div>
+          </li>`);
+        });
+      }
+    });
+  }
+
+  function getHealthReport(){
+    $.get("http://localhost:9001/health", function(health) {
+      if($.isEmptyObject(health)){
+        $("#healthStats").append('<p class="w3-container">An error occured while getting health report..Please try again later</p>');
+      }else {
+        console.log(health);
+        $("#healthStats").append(`<div class="w3-light-grey w3-xlarge w3-display-container">
+              <div class="w3-row">
+                <div class="w3-third"><label>Status :</label>${health.status}</div>
+                <div class="w3-twothird"><label>Database :</label>${health.db.database}</div>
+              </div>
+              <div class="w3-row">
+                <div class="w3-twothird"><label>Diskspace :</label>
+                  <div class="w3-row"><label>Total :</label>${health.diskSpace.total}</div>
+                  <div class="w3-row"><label>Free :</label>${health.diskSpace.free}</div>
+                  <div class="w3-row"><label>Threshold :</label>${health.diskSpace.threshold}</div>
+                </div>
+              </div>
+        </div>`);
+      }
+    });
+  }
+
+  function getAllCourses(){
+    $.get("http://localhost:9001/topics/courses", function(courseList) {
+      if($.isEmptyObject(courseList)){
+        $("#courseList").append('<li class="w3-light-grey w3-xlarge w3-padding-32">There are no courses. Please add one to a topic..</li>');
+      }else {
+        courseList.forEach(function(course) {
+          console.log(courseList);
+          $("#courseList").append(`<li class="w3-light-grey w3-xlarge w3-display-container" id="course-${course.id}">
+            <span class="w3-button w3-red w3-small w3-display-topright" title="Delete Course" onClick="deleteCourse('${course.id}', '${course.topic.id}')">X</span>
+            <span class="w3-button w3-blue w3-small w3-display-bottomright" title="Update Course" onClick="updateCourseId('${course.id}', '${course.topic.id}')">U</span>
+              <div class="w3-row">
+                <div class="w3-quarter"><label>Id :</label>${course.id}</div>
+              </div>
+              <div class="w3-row">
+                <div class="w3-third"><label>Name :</label>${course.name}</div>
+                <div class="w3-twothird"><label>Description :</label>${course.description}</div>
+              </div>
+          </li>`);
+        });
+      }
+    });
+  }
+
+  function getAllLessons(){
+    $.get("http://localhost:9001/topics/courses/lessons", function(lessonList) {
+      if($.isEmptyObject(lessonList)){
+        $("#lessonList").append('<li class="w3-light-grey w3-xlarge w3-padding-32">There are no Lessons. Please add one to a course..</li>');
+      }else {
+        lessonList.forEach(function(lesson) {
+          console.log(lessonList);
+          $("#lessonList").append(`<li class="w3-light-grey w3-xlarge w3-display-container" id="lesson-${lesson.id}">
+            <span class="w3-button w3-red w3-small w3-display-topright" title="Delete Lesson" onClick="deleteLesson('${lesson.id}', '${lesson.course.id}', '${lesson.course.topic.id}')">X</span>
+            <span class="w3-button w3-blue w3-small w3-display-bottomright" title="Update Lesson" onClick="updateLessonId('${lesson.id}', '${lesson.course.id}', '${lesson.course.topic.id}')">U</span>
+              <div class="w3-row">
+                <div class="w3-quarter"><label>Id :</label>${lesson.id}</div>
+              </div>
+              <div class="w3-row">
+                <div class="w3-third"><label>Name :</label>${lesson.name}</div>
+                <div class="w3-twothird"><label>Description :</label>${lesson.description}</div>
+              </div>
+          </li>`);
+        });
+      }
+    });
+  }
+
+  function getTopicById(id){
+    $.get("http://localhost:9001/topics/"+id, function(topic) {
+      if($.isEmptyObject(topicList)){
+        alert('Sorry found no topic with given id..');
+      }else {
+        console.log(topic);
+        $("#topicList").append(`<li class="w3-light-grey w3-xlarge w3-padding-32">${topic.name}</li>`);
+      }
+    });
+  }
+
+  function deleteTopic(id){
+    if(confirm('Are you sure?')){
+      $.ajax({
+        url: 'http://localhost:9001/topics/'+id,
+        type: 'DELETE',
+        success: function (response) {
+          if(response){
+            $("#topic-"+id).remove();
+          }else {
+            alert("Oops!An error occured, please try again later..");
+            console.log(response);
+          }
+        }
+      });
+    }
+  }
+
+  function deleteCourse(id, topicId){
+    if(confirm('Are you sure?')){
+      $.ajax({
+        url: 'http://localhost:9001/topics/'+topicId+'/courses/'+id,
+        type: 'DELETE',
+        success: function (response) {
+          if(response){
+            $("#course-"+id).remove();
+          }else {
+            alert("Oops!An error occured, please try again later..");
+            console.log(response);
+          }
+        }
+      });
+    }
+  }
+
+  function deleteLesson(id, courseId, topicId){
+    if(confirm('Are you sure?')){
+      $.ajax({
+        url: 'http://localhost:9001/topics/'+topicId+'/courses/'+courseId+'/lessons/'+id,
+        type: 'DELETE',
+        success: function (response) {
+          if(response){
+            $("#lesson-"+id).remove();
+          }else {
+            alert("Oops!An error occured, please try again later..");
+            console.log(response);
+          }
+        }
+      });
+    }
+  }
+
+  function createObject() {
+    var obj = new Object();
+    obj['id'] = $("#obj_id").val();
+    obj['name'] = $("#obj_name").val();
+    obj['description'] = $("#obj_desc").val();
+    if(createObj == "topic"){
+      createTopic(obj);
+      $("#addModal").hide();
+    }else if(createObj == "course"){
+      var topicId = $("#crs_tp_id").val();
+      $("#crs_id_lbl, #crs_tp_id").remove();
+      createCourse(obj, topicId);
+    }else if(createObj == "lesson"){
+      var topicId = $("#lsn_tp_id").val();
+      var courseId = $("#lsn_crs_id").val();
+      $("#lsn_crs_id, #lsn_id_lbl, #lsn_tp_id, #lsn_tp_lbl, #lsn_crs_lbl").remove();
+      createLesson(obj, courseId, topicId);
+    }
+  }
+
+  function createTopic(topic){
+    $.ajax({
+      url: 'http://localhost:9001/topics',
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      success: function (response) {
+        if(response){
+          location.reload();
+        }else {
+          alert("fail");
+        }
+      },
+      data: JSON.stringify(topic)
+    });
+  }
+
+  function createCourse(course, topicId){
+    $.ajax({
+      url: 'http://localhost:9001/topics/'+topicId+'/courses/',
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      success: function (response) {
+        if(response){
+          location.reload();
+        }else {
+          alert("fail");
+        }
+      },
+      data: JSON.stringify(course)
+    });
+  }
+
+  function createLesson(lesson, courseId, topicId){
+    $.ajax({
+      url: 'http://localhost:9001/topics/'+topicId+'/courses/'+courseId+'/lessons/',
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      success: function (response) {
+        if(response){
+          location.reload();
+        }else {
+          alert("fail");
+        }
+      },
+      data: JSON.stringify(lesson)
+    });
+  }
+
+  function updateTopicId(id){
+    updateObj = "topic";
+    updateTopicId = id;
+    $("#updateModal").show();
+  }
+
+  function updateCourseId(id, topicId){
+    updateObj = "course";
+    updateCourseId = id;
+    updateCourse_TopicId = topicId;
+    $("#updateModal").show();
+  }
+
+</script>
+<body>
+
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-red w3-collapse w3-top w3-large w3-padding" style="z-index:3;width:300px;font-weight:bold;" id="mySidebar"><br>
+  <a href="javascript:void(0)" onclick="w3_close()" class="w3-button w3-hide-large w3-display-topleft" style="width:100%;font-size:22px">Close Menu</a>
+  <div class="w3-container">
+    <h3 class="w3-padding-64"><b>Course Manager</b></h3>
+  </div>
+  <div class="w3-bar-block">
+    <a href="#" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white">Home</a>
+    <a href="#topics" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white">Topics</a>
+    <a href="#courses" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white">Courses</a>
+    <a href="#lessons" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white">Lessons</a>
+    <a href="#health" onclick="w3_close()" class="w3-bar-item w3-button w3-hover-white">Health</a>
+  </div>
+</nav>
+
+<!-- Top menu on small screens -->
+<header class="w3-container w3-top w3-hide-large w3-red w3-xlarge w3-padding">
+  <a href="javascript:void(0)" class="w3-button w3-red w3-margin-right" onclick="w3_open()">☰</a>
+  <span>Course Manager</span>
+</header>
+
+<!-- Overlay effect when opening sidebar on small screens -->
+<div class="w3-overlay w3-hide-large" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
+
+<!-- !PAGE CONTENT! -->
+<div class="w3-main" style="margin-left:340px;margin-right:40px">
+
+  <!-- Header -->
+  <div class="w3-container" style="margin-top:80px" id="showcase">
+    <h1 class="w3-jumbo"><b>Welcome!</b></h1>
+    <hr style="width:50px;border:5px solid red" class="w3-round">
+    <h6 class="w3-xxxlarge w3-text-red w3-row" >
+      <div class="w3-row" id="dailyQuote"></div>
+    </h6>
+  </div>
+
+  <!-- Modals for CRUD-->
+  <div id="addModal" class="w3-modal">
+    <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:600px">
+      <form class="w3-container" action="#">
+        <div class="w3-section" id="addForm">
+          <label><b>Id</b></label>
+          <input class="w3-input w3-border w3-margin-bottom" type="text" placeholder="Enter an Id" id="obj_id" required>
+          <label><b>Name</b></label>
+          <input class="w3-input w3-border" type="text" placeholder="Enter a Name" id="obj_name" required>
+          <label><b>Description</b></label>
+          <input class="w3-input w3-border" type="text" placeholder="Enter description" id="obj_desc" required>
+          <button class="w3-button w3-block w3-green w3-section w3-padding" type="button" id="createBtn">Create</button>
+        </div>
+      </form>
+      <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+        <button onclick="document.getElementById('addModal').style.display='none'" type="button" class="w3-button w3-red">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="updateModal" class="w3-modal">
+    <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:600px">
+      <form class="w3-container" action="#">
+        <div class="w3-section">
+          <label><b>Name</b></label>
+          <input class="w3-input w3-border" type="text" placeholder="Enter updated Name here.." id="updt_obj_name" required>
+          <label><b>Description</b></label>
+          <input class="w3-input w3-border" type="text" placeholder="Enter updated description here.." id="updt_obj_desc" required>
+          <button class="w3-button w3-block w3-green w3-section w3-padding" type="button" id="updateBtn">Update</button>
+        </div>
+      </form>
+      <div class="w3-container w3-border-top w3-padding-16 w3-light-grey">
+        <button onclick="document.getElementById('updateModal').style.display='none'" type="button" class="w3-button w3-red">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topics -->
+  <div class="w3-container" id="topics" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Topics.</b></h1>
+    <hr style="width:50px;border:5px solid red" class="w3-round">
+    <p>Choose from a wide range of topics to view it's courses:</p>
+    <div class="w3-row-padding" style="max-height: 450px; overflow: auto;">
+      <div class="w3-margin-bottom">
+        <ul class="w3-ul w3-light-grey w3-center" id="topicList">
+          <li class="w3-dark-grey w3-xlarge w3-padding-32">Topic List: <button class="w3-btn w3-green w3-small w3-right" id="addTopic">Add</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Courses -->
+  <div class="w3-container" id="courses" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Courses.</b></h1>
+    <hr style="width:50px;border:5px solid red" class="w3-round">
+    <p>Each topic contains multiple courses on the most relevant subjects:</p>
+    <div class="w3-row-padding" style="max-height: 450px; overflow: auto;">
+      <div class="w3-margin-bottom">
+        <ul class="w3-ul w3-light-grey w3-center" id="courseList">
+          <li class="w3-dark-grey w3-xlarge w3-padding-32">Course List: <button class="w3-btn w3-green w3-small w3-right" id="addCourse">Add</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lessons -->
+  <div class="w3-container" id="lessons" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Lessons.</b></h1>
+    <hr style="width:50px;border:5px solid red" class="w3-round">
+    <p>Select a course to get all its lessons.</p>
+    <div class="w3-row-padding" style="max-height: 450px; overflow: auto;">
+      <div class="w3-margin-bottom">
+        <ul class="w3-ul w3-light-grey w3-center" id="lessonList">
+          <li class="w3-dark-grey w3-xlarge w3-padding-32">Lesson List: <button class="w3-btn w3-green w3-small w3-right" id="addLesson">Add</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health -->
+  <div class="w3-container" id="health" style="margin-top:75px">
+    <h1 class="w3-xxxlarge w3-text-red"><b>Health.</b></h1>
+    <hr style="width:50px;border:5px solid red" class="w3-round">
+    <p>Below is the health check report for the system: </p>
+    <div class="w3-container" id="healthStats"></div>
+  </div>
+  <!-- End page content -->
+</div>
+
+<script>
+// Script to open and close sidebar
+function w3_open() {
+    document.getElementById("mySidebar").style.display = "block";
+    document.getElementById("myOverlay").style.display = "block";
+}
+ 
+function w3_close() {
+    document.getElementById("mySidebar").style.display = "none";
+    document.getElementById("myOverlay").style.display = "none";
+}
+</script>
+
+</body>
+</html>
